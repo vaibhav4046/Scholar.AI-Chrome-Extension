@@ -20,3 +20,5 @@ ScholarAI is an AI-powered Chrome extension for analyzing research papers, artic
 - The UI is modern, responsive, and easy to use.
 
 For further customization or support, contact the developer. 
+
+If you want to use this, just upload the files in chrome extension load unpacked section.
