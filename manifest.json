@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "ScholarAI - Research Paper Analyzer",
+  "version": "1.0",
+  "description": "AI-powered research assistant for academic papers",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "contextMenus",
+    "notifications",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://arxiv.org/*",
+    "https://scholar.google.com/*",
+    "https://pubmed.ncbi.nlm.nih.gov/*",
+    "https://api.crossref.org/*",
+    "https://generativelanguage.googleapis.com/*",
+    "<all_urls>"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "ScholarAI Assistant"
+  },
+  "content_scripts": [{
+    "matches": ["<all_urls>"],
+    "js": ["content.js"]
+  }],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "web_accessible_resources": [{
+    "resources": ["*"],
+    "matches": ["<all_urls>"]
+  }]
+} 
