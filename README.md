@@ -1,23 +1,22 @@
-# Scholar.AI-Chrome-Extension
-ScholarAI - The AI-Powered Research Paper Analyzer
-ScholarAI is a powerful Chrome extension designed to accelerate academic research. It acts as an intelligent assistant, leveraging multiple AI models to analyze any research paper, saving researchers, students, and academics countless hours on literature review.
+# ScholarAI Chrome Extension
 
-Key Features:
-Instant AI Summaries: Upload a PDF or provide a URL to get a concise, AI-generated summary in seconds.
+## Overview
+ScholarAI is an AI-powered Chrome extension for analyzing research papers, articles, and documents. It provides:
+- File upload and analysis (PDF, DOC, DOCX, TXT)
+- URL-based paper analysis (arXiv, PubMed, etc.)
+- One-click analysis of the current web page
+- Export, citation, and sharing features
+- Confidence score, processing time, and stats tracking
 
-Citation Network Mapping: Visually explore the connections between research papers to understand the landscape of a topic.
+## Production Deployment Tips
+- **Restrict Permissions:** In `manifest.json`, limit `host_permissions` and `<all_urls>` to only the domains your extension needs. This improves security and user trust.
+- **Test on Target Sites:** Ensure the extension works on all sites you intend to support.
+- **Branding:** Update icons and text as needed for your client or organization.
+- **Privacy:** Do not collect or transmit user data without consent.
 
-Methodology Extractor: Automatically identify and pull out the research methods, datasets, and tools used in a paper.
+## For Clients
+- The extension is fully functional and optimized for performance and security.
+- All user actions provide clear feedback and error handling.
+- The UI is modern, responsive, and easy to use.
 
-Bias & Limitation Detection: Intelligently flags potential biases and limitations mentioned by the authors to ensure critical analysis.
-
-Literature Gap Finder: Suggests novel, unexplored research questions based on the paper's findings and existing literature.
-
-Tech Stack:
-Frontend: HTML5, CSS3, JavaScript (ES6+)
-
-Core Logic: Chrome Extension API (Manifest V3), Service Worker (background.js)
-
-Backend & AI: Integration with third-party AI/ML models for summarization and analysis.
-
-Data Handling: Advanced web scraping (content.js) and graph algorithms for network visualization.
+For further customization or support, contact the developer. 
