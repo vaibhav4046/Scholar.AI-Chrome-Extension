@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>ScholarAI Side Panel</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body.sidepanel { width: 100%; max-width: none; min-width: 320px; }
+    body.sidepanel .content { padding-bottom: 20px; }
+  </style>
+</head>
+<body class="sidepanel">
+  <div class="app" id="app">
+    <header class="header">
+      <div class="brand">
+        <div class="brand-mark">S</div>
+        <div>
+          <span class="brand-name">ScholarAI</span>
+          <span class="brand-tag">Panel</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        </button>
+        <button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-tab="analyze" role="tab">Analyze</button>
+      <button class="tab" data-tab="chat" role="tab">Chat</button>
+      <button class="tab" data-tab="library" role="tab">Library</button>
+    </nav>
+
+    <main class="content">
+      <section class="pane active" id="pane-analyze" role="tabpanel">
+        <div id="analyzeHome">
+          <div class="drop-zone" id="dropZone" tabindex="0" role="button">
+            <div class="drop-zone-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            </div>
+            <div class="drop-zone-title">Drop a PDF here</div>
+            <div class="drop-zone-hint">or click to browse</div>
+          </div>
+          <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt" class="sr-only">
+          <div class="divider">or paste a link</div>
+          <div class="input-group">
+            <input type="url" id="urlInput" class="input" placeholder="arXiv, PubMed, Nature…">
+            <button class="btn btn-primary" id="urlBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+          <button class="btn btn-secondary btn-block" id="pageBtn" style="margin-top:10px;">Analyze current tab</button>
+          <div class="stat-row">
+            <div class="stat"><div class="stat-value" id="statPapers">0</div><div class="stat-label">Papers</div></div>
+            <div class="stat"><div class="stat-value" id="statChats">0</div><div class="stat-label">Questions</div></div>
+            <div class="stat"><div class="stat-value" id="statTime">0s</div><div class="stat-label">Avg time</div></div>
+          </div>
+        </div>
+
+        <div id="analyzeLoading" class="hidden">
+          <div class="loading">
+            <div class="spinner"></div>
+            <div class="loading-text" id="loadingText">Preparing…</div>
+            <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+          </div>
+        </div>
+
+        <div id="analyzeResults" class="hidden">
+          <div style="display:flex;gap:6px;margin-bottom:10px;">
+            <button class="btn btn-ghost" id="backBtn" style="padding:6px 10px;font-size:11px;">← Back</button>
+            <div style="flex:1"></div>
+            <button class="btn btn-ghost" id="chatFromResults" style="padding:6px 10px;font-size:11px;">Ask questions →</button>
+          </div>
+          <div class="card">
+            <div class="card-title">Paper</div>
+            <div class="card-body" id="resTitle" style="font-weight:600;"></div>
+            <div class="card-body" id="resMeta" style="font-size:11px;color:var(--text-2);margin-top:4px;"></div>
+          </div>
+          <div class="card"><div class="card-title">Summary</div><div class="card-body md-content" id="resSummary"></div></div>
+          <div class="card"><div class="card-title">Key findings</div><div class="card-body md-content" id="resFindings"></div></div>
+          <div class="card"><div class="card-title">Methodology</div><div class="card-body md-content" id="resMethod"></div></div>
+          <div class="card"><div class="card-title">Bias &amp; limitations</div><div class="card-body md-content" id="resBias"></div></div>
+          <div class="card"><div class="card-title">Research gaps</div><div class="card-body md-content" id="resGaps"></div></div>
+          <div class="card hidden" id="relatedCard"><div class="card-title">Related papers</div><div class="card-body" id="relatedList"></div></div>
+          <div class="btn-row">
+            <button class="btn btn-secondary" id="copyCiteBtn">Copy cite</button>
+            <button class="btn btn-secondary" id="exportBtn">Export</button>
+          </div>
+          <div class="stat-row">
+            <div class="stat"><div class="stat-value" id="resConf">—</div><div class="stat-label">Confidence</div></div>
+            <div class="stat"><div class="stat-value" id="resTime">—</div><div class="stat-label">Time</div></div>
+            <div class="stat"><div class="stat-value" id="resWords">—</div><div class="stat-label">Words</div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="pane" id="pane-chat" role="tabpanel">
+        <div class="chat-shell">
+          <div class="chat-context empty" id="chatContext">
+            <span class="chat-context-dot"></span>
+            <span id="chatContextLabel">No paper loaded.</span>
+          </div>
+          <div class="suggestion-row" id="suggestionRow">
+            <button class="chip" data-q="What is the main contribution?">Main contribution?</button>
+            <button class="chip" data-q="Explain the methodology step by step.">Explain methods</button>
+            <button class="chip" data-q="What are the key limitations?">Limitations</button>
+            <button class="chip" data-q="How does this compare to prior work?">Vs prior work</button>
+          </div>
+          <div class="chat-msgs" id="chatMsgs"></div>
+          <div class="chat-input-row">
+            <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ask anything…" disabled></textarea>
+            <button class="send-btn" id="chatSendBtn" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="pane" id="pane-library" role="tabpanel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <div style="font-size:11px;color:var(--text-2);" id="libraryCount">0 papers</div>
+          <button class="btn btn-ghost" id="libraryClearBtn" style="padding:4px 8px;font-size:11px;">Clear all</button>
+        </div>
+        <div id="libraryList"></div>
+      </section>
+    </main>
+    <div id="toastMount"></div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

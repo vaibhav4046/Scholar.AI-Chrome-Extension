@@ -1,37 +1,87 @@
 {
   "manifest_version": 3,
-  "name": "ScholarAI - Research Paper Analyzer",
-  "version": "1.0",
-  "description": "AI-powered research assistant for academic papers",
+  "name": "ScholarAI — Research Paper Analyzer",
+  "version": "2.0.0",
+  "description": "AI research assistant. Summarize, chat with, and cite any paper on arXiv, PubMed, Nature, IEEE, bioRxiv, and more.",
   "permissions": [
     "activeTab",
     "storage",
     "scripting",
     "contextMenus",
     "notifications",
-    "tabs"
+    "tabs",
+    "sidePanel"
   ],
   "host_permissions": [
     "https://arxiv.org/*",
+    "https://*.arxiv.org/*",
     "https://scholar.google.com/*",
     "https://pubmed.ncbi.nlm.nih.gov/*",
+    "https://www.ncbi.nlm.nih.gov/*",
+    "https://www.biorxiv.org/*",
+    "https://www.medrxiv.org/*",
+    "https://www.nature.com/*",
+    "https://www.science.org/*",
+    "https://www.sciencedirect.com/*",
+    "https://ieeexplore.ieee.org/*",
+    "https://dl.acm.org/*",
+    "https://link.springer.com/*",
+    "https://www.semanticscholar.org/*",
+    "https://api.semanticscholar.org/*",
     "https://api.crossref.org/*",
     "https://generativelanguage.googleapis.com/*",
     "<all_urls>"
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "ScholarAI Assistant"
+    "default_title": "ScholarAI — Analyze this paper",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
   },
-  "content_scripts": [{
-    "matches": ["<all_urls>"],
-    "js": ["content.js"]
-  }],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "options_page": "options.html",
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
-  "web_accessible_resources": [{
-    "resources": ["*"],
-    "matches": ["<all_urls>"]
-  }]
-} 
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+S",
+        "mac": "Alt+S"
+      },
+      "description": "Open ScholarAI"
+    },
+    "analyze-current-page": {
+      "suggested_key": {
+        "default": "Alt+Shift+S",
+        "mac": "Alt+Shift+S"
+      },
+      "description": "Analyze current page"
+    }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["styles.css", "icon*.png"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
