@@ -1,0 +1,100 @@
+/* ScholarAI — injected floating button + flash toast */
+
+#scholarai-fab {
+  all: unset;
+  position: fixed !important;
+  right: 20px !important;
+  bottom: 20px !important;
+  z-index: 2147483646 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 10px 16px !important;
+  background: linear-gradient(135deg, #7c5cff 0%, #22d3ee 100%) !important;
+  color: white !important;
+  border-radius: 999px !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 8px 28px rgba(124, 92, 255, 0.4), 0 2px 6px rgba(0, 0, 0, 0.2) !important;
+  cursor: pointer !important;
+  transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease !important;
+  line-height: 1 !important;
+  letter-spacing: -0.01em !important;
+  user-select: none !important;
+}
+
+#scholarai-fab:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 12px 36px rgba(124, 92, 255, 0.5), 0 4px 8px rgba(0, 0, 0, 0.25) !important;
+}
+
+#scholarai-fab:active {
+  transform: translateY(0) scale(0.98) !important;
+}
+
+#scholarai-fab.loading {
+  opacity: 0.8 !important;
+  pointer-events: none !important;
+}
+
+#scholarai-fab svg {
+  width: 18px !important;
+  height: 18px !important;
+  flex-shrink: 0 !important;
+}
+
+#scholarai-fab.loading svg {
+  animation: scholarai-spin 800ms linear infinite !important;
+}
+
+@keyframes scholarai-spin {
+  to { transform: rotate(360deg); }
+}
+
+#scholarai-flash {
+  all: unset;
+  position: fixed !important;
+  right: 20px !important;
+  bottom: 80px !important;
+  z-index: 2147483647 !important;
+  padding: 10px 16px !important;
+  background: rgba(18, 21, 29, 0.95) !important;
+  color: white !important;
+  border-radius: 10px !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  max-width: 320px !important;
+  line-height: 1.4 !important;
+  opacity: 0 !important;
+  transform: translateY(6px) !important;
+  transition: opacity 180ms ease, transform 180ms ease !important;
+  pointer-events: none !important;
+}
+
+#scholarai-flash.show {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+#scholarai-flash.err {
+  background: rgba(120, 20, 30, 0.95) !important;
+  border: 1px solid rgba(248, 113, 113, 0.4) !important;
+}
+
+#scholarai-flash.ok {
+  background: rgba(14, 95, 70, 0.95) !important;
+  border: 1px solid rgba(52, 211, 153, 0.4) !important;
+}
+
+@media print {
+  #scholarai-fab, #scholarai-flash { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #scholarai-fab, #scholarai-flash { transition: none !important; animation: none !important; }
+}

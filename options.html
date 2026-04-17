@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>ScholarAI Settings</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="options">
+  <div class="options-container">
+    <div class="brand" style="margin-bottom:20px;">
+      <div class="brand-mark">S</div>
+      <div>
+        <div class="options-title">ScholarAI Settings</div>
+        <div class="options-subtitle" style="margin:0;">Configure your research assistant.</div>
+      </div>
+    </div>
+
+    <section class="options-section">
+      <div class="options-section-title">Gemini API key</div>
+      <div class="options-section-desc">
+        Free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.
+        Stored locally in your browser only. Never sent anywhere except Google.
+      </div>
+      <div class="input-group">
+        <input type="password" class="input" id="apiKey" placeholder="AIza…" autocomplete="off" spellcheck="false">
+        <button class="btn btn-secondary" id="toggleKey" type="button" aria-label="Show/hide key">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+      <button class="btn btn-primary" id="testKey" style="margin-top:10px;">Test key</button>
+      <div id="keyStatus" class="settings-desc" style="margin-top:8px;"></div>
+    </section>
+
+    <section class="options-section">
+      <div class="options-section-title">Model</div>
+      <div class="options-section-desc">Faster models = quicker answers. Pro models = deeper analysis.</div>
+      <select class="select" id="model">
+        <option value="gemini-2.5-flash">Gemini 2.5 Flash — Fast, balanced (recommended)</option>
+        <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash Lite — Fastest, lowest cost</option>
+        <option value="gemini-2.5-pro">Gemini 2.5 Pro — Deepest analysis, slower</option>
+      </select>
+    </section>
+
+    <section class="options-section">
+      <div class="options-section-title">Appearance</div>
+      <div class="toggle">
+        <span class="toggle-label">Dark mode</span>
+        <div class="switch on" id="themeSwitch" role="switch" aria-checked="true" tabindex="0"></div>
+      </div>
+      <div class="toggle">
+        <span class="toggle-label">Floating button on paper sites</span>
+        <div class="switch on" id="floatSwitch" role="switch" aria-checked="true" tabindex="0"></div>
+      </div>
+      <div class="toggle">
+        <span class="toggle-label">Auto-fetch related papers (Semantic Scholar)</span>
+        <div class="switch on" id="relatedSwitch" role="switch" aria-checked="true" tabindex="0"></div>
+      </div>
+    </section>
+
+    <section class="options-section">
+      <div class="options-section-title">Analysis depth</div>
+      <div class="options-section-desc">How much of the paper to send to Gemini. More text = better analysis, more tokens.</div>
+      <select class="select" id="depth">
+        <option value="quick">Quick — first 3,000 words</option>
+        <option value="standard" selected>Standard — first 8,000 words</option>
+        <option value="deep">Deep — full text (up to Gemini limit)</option>
+      </select>
+    </section>
+
+    <section class="options-section">
+      <div class="options-section-title">Keyboard shortcuts</div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:10px;font-size:13px;">
+        <div>Open ScholarAI</div><div><span class="kbd">Alt+S</span></div>
+        <div>Analyze current page</div><div><span class="kbd">Alt+Shift+S</span></div>
+        <div>Submit chat message</div><div><span class="kbd">Enter</span></div>
+        <div>New line in chat</div><div><span class="kbd">Shift+Enter</span></div>
+        <div>Back to home</div><div><span class="kbd">Esc</span></div>
+      </div>
+      <div class="settings-desc" style="margin-top:10px;">
+        Change at <span class="kbd">chrome://extensions/shortcuts</span>
+      </div>
+    </section>
+
+    <section class="options-section">
+      <div class="options-section-title">Data</div>
+      <div class="options-section-desc">All papers and chats are stored locally. Export or wipe at any time.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" id="exportAll">Export library</button>
+        <button class="btn btn-secondary" id="importAll">Import library</button>
+        <button class="btn btn-secondary" id="wipe" style="color:var(--danger);">Wipe all data</button>
+        <input type="file" id="importFile" accept=".json" class="sr-only">
+      </div>
+    </section>
+
+    <section class="options-section" style="text-align:center;background:transparent;border:none;">
+      <div class="options-section-desc" style="margin:0;">
+        ScholarAI v2 · <a href="https://github.com/vaibhav4046/Scholar.AI-Chrome-Extension" target="_blank" rel="noopener">GitHub</a> · <a href="#" id="resetBtn">Reset defaults</a>
+      </div>
+    </section>
+
+    <div id="toastMount"></div>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>
