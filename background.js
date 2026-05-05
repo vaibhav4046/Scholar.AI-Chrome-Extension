@@ -163,7 +163,7 @@ async function getDepth() {
   return DEPTH_LIMITS[s.depth] || DEPTH_LIMITS.standard;
 }
 
-async function geminiCall(parts, { system, responseMime = null } = {}) {
+async function geminiCall(parts, { system, responseMime = null, timeoutMs = 90_000 } = {}) {
   const apiKey = await getApiKey();
   const model = await getModel();
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
@@ -179,11 +179,24 @@ async function geminiCall(parts, { system, responseMime = null } = {}) {
   };
   if (system) body.systemInstruction = { parts: [{ text: system }] };
 
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-    body: JSON.stringify(body),
-  });
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  let resp;
+  try {
+    resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify(body),
+      signal: ctrl.signal,
+    });
+  } catch (e) {
+    clearTimeout(timer);
+    if (e.name === "AbortError") {
+      throw new Error(`Gemini request timed out after ${Math.round(timeoutMs / 1000)}s. Try Quick depth or a shorter paper.`);
+    }
+    throw new Error("Network error calling Gemini: " + (e.message || e));
+  }
+  clearTimeout(timer);
 
   if (!resp.ok) {
     const errText = await resp.text().catch(() => "");
@@ -214,7 +227,15 @@ function friendlyApiError(status, body) {
 
 async function handleFetchUrl(url) {
   try {
-    const r = await fetch(url, { headers: { "User-Agent": "Mozilla/5.0 ScholarAI" } });
+    // Use a realistic UA — some publishers (arxiv, nature) reject bot UAs.
+    const r = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/pdf,*/*;q=0.8",
+      },
+      redirect: "follow",
+    });
     if (!r.ok) throw new Error("HTTP " + r.status);
     const ct = r.headers.get("content-type") || "";
     if (ct.includes("application/pdf")) {
@@ -351,16 +372,30 @@ Be honest. If the text is too short or off-topic for a paper, say so plainly. Do
     parsed = recoverJson(raw);
   }
 
+  // Coerce any array fields into markdown bullet lists — Gemini sometimes
+  // emits arrays for "findings"/"gaps" even though the schema says string.
+  const toMd = (v) => {
+    if (!v) return "";
+    if (Array.isArray(v)) return v.map((x) => `- ${typeof x === "string" ? x : JSON.stringify(x)}`).join("\n");
+    if (typeof v === "object") {
+      // Object with key/value pairs → bullet list
+      return Object.entries(v).map(([k, val]) => `- **${k}:** ${val}`).join("\n");
+    }
+    return String(v);
+  };
+
   const filled = {
-    summary: parsed.summary || "",
-    findings: parsed.findings || "",
-    methodology: parsed.methodology || "",
-    bias: parsed.bias || "",
-    gaps: parsed.gaps || "",
+    summary: toMd(parsed.summary),
+    findings: toMd(parsed.findings),
+    methodology: toMd(parsed.methodology),
+    bias: toMd(parsed.bias),
+    gaps: toMd(parsed.gaps),
     wordCount: parsed.wordCount || 0,
   };
 
-  const filledCount = ["summary", "findings", "methodology", "bias", "gaps"].filter((k) => filled[k] && filled[k].length > 20).length;
+  const filledCount = ["summary", "findings", "methodology", "bias", "gaps"].filter(
+    (k) => typeof filled[k] === "string" && filled[k].length > 20
+  ).length;
   const confidence = Math.min(98, 60 + filledCount * 7 + (paper.pdfBase64 ? 5 : 0));
 
   return { analysis: filled, confidence };
@@ -388,6 +423,9 @@ function recoverJson(text) {
 // -------- Chat --------
 
 async function handleChat(paper, history) {
+  if (!paper) throw new Error("No paper loaded.");
+  if (!history || !history.length) throw new Error("No question to answer.");
+
   const system = `You are ScholarAI, helping a user understand a specific research paper. You may only reason about the paper below. If asked something not answerable from the paper, say so and suggest what to look up.
 Paper title: ${paper.title || "Unknown"}
 Source: ${paper.source || "Web"}
@@ -396,21 +434,34 @@ ${paper.authors ? "Authors: " + paper.authors : ""}
 Answer concisely (under 150 words) with Markdown. Cite short quotes when precise. Never invent numbers.`;
 
   const depthLimit = await getDepth();
-  const contextText = (paper.text || paper.analysis?.summary || "").slice(0, Math.min(depthLimit * 7, 40000));
+  const fallbackText = paper.text || paper.analysis?.summary || "";
+  const contextText = fallbackText.slice(0, Math.min(depthLimit * 7, 40000));
+
+  // If we have neither text nor pdfBase64 nor any analysis, refuse early
+  // so the user gets a useful error instead of a hallucinated answer.
+  if (!contextText && !paper.pdfBase64 && !paper.analysis) {
+    throw new Error(
+      "No paper context available. Re-analyze the paper from a URL or PDF before chatting."
+    );
+  }
+
   const contextSummary = paper.analysis
-    ? `Prior analysis:\nSummary: ${paper.analysis.summary}\nMethodology: ${paper.analysis.methodology}\nFindings: ${paper.analysis.findings}\nLimitations: ${paper.analysis.bias}\n\n`
+    ? `Prior analysis:\nSummary: ${paper.analysis.summary || "—"}\nMethodology: ${paper.analysis.methodology || "—"}\nFindings: ${paper.analysis.findings || "—"}\nLimitations: ${paper.analysis.bias || "—"}\n\n`
     : "";
 
-  const conversation = history.slice(-10).map((m) =>
-    `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`
-  ).join("\n\n");
+  const conversation = history
+    .slice(-10)
+    .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`)
+    .join("\n\n");
 
   const parts = [];
   if (paper.pdfBase64) {
     parts.push({ inlineData: { mimeType: "application/pdf", data: paper.pdfBase64 } });
   }
   parts.push({
-    text: `${contextSummary}Paper text (excerpt):\n${contextText}\n\n---\nConversation so far:\n${conversation}\n\nAssistant:`,
+    text: `${contextSummary}${
+      contextText ? "Paper text (excerpt):\n" + contextText + "\n\n" : ""
+    }---\nConversation so far:\n${conversation}\n\nAssistant:`,
   });
 
   const reply = await geminiCall(parts, { system });
@@ -447,20 +498,33 @@ async function handleRelated(paper) {
 // -------- Citations --------
 
 function buildCitations(paper) {
-  const authors = paper.authors || "Unknown Author";
-  const year = paper.year || new Date(paper.analyzedAt || Date.now()).getFullYear();
+  const authors = paper.authors && paper.authors.trim() ? paper.authors : "Unknown Author";
+  // Per APA: use "n.d." (no date) when the year is genuinely unknown.
+  const year = paper.year || "n.d.";
+  const bibtexYear = paper.year || new Date(paper.analyzedAt || Date.now()).getFullYear();
   const title = paper.title || "Untitled";
   const source = paper.source || "";
   const url = paper.url || "";
-  const doi = paper.doi ? `https://doi.org/${paper.doi}` : url;
+  const doiUrl = paper.doi ? `https://doi.org/${paper.doi}` : url;
 
-  const apa = `${authors} (${year}). ${title}. ${source}. ${doi}`.replace(/\s+\./g, ".");
-  const mla = `${authors}. "${title}." ${source}, ${year}, ${doi}.`;
-  const firstAuthor = (authors.split(",")[0] || "Author").split(" ").slice(-1)[0].replace(/\W/g, "");
-  const bibtex = `@article{${(firstAuthor || "ref")}${year},
+  // Build APA cleanly without trailing periods on missing fields.
+  const apaParts = [`${authors} (${year}).`, `${title}.`];
+  if (source) apaParts.push(`${source}.`);
+  if (doiUrl) apaParts.push(doiUrl);
+  const apa = apaParts.join(" ");
+
+  const mlaParts = [`${authors}. "${title}."`];
+  if (source) mlaParts.push(`${source},`);
+  mlaParts.push(`${year}${doiUrl ? "," : "."}`);
+  if (doiUrl) mlaParts.push(`${doiUrl}.`);
+  const mla = mlaParts.join(" ");
+
+  const firstAuthor =
+    (authors.split(",")[0] || "Author").split(" ").slice(-1)[0].replace(/\W/g, "") || "ref";
+  const bibtex = `@article{${firstAuthor}${bibtexYear},
   title={${title}},
   author={${authors}},
-  year={${year}},
+  year={${bibtexYear}},
   journal={${source}},
   url={${url}}${paper.doi ? `,\n  doi={${paper.doi}}` : ""}
 }`;

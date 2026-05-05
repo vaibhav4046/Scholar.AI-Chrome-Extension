@@ -53,10 +53,33 @@ async function loadPinnedPaper() {
 }
 
 async function savePinnedPaper() {
-  await chrome.storage.session.set({
-    currentPaper: state.loadedPaper,
-    currentChat: state.chatHistory,
-  });
+  // Strip the PDF base64 before persisting — chrome.storage.session has a
+  // 10MB total quota and a single quota-exceeded write throws and leaves
+  // state inconsistent. We keep the bytes only in the in-memory state for
+  // the current session; chat will fall back to the analysis text.
+  const slim = state.loadedPaper
+    ? (() => {
+        const { pdfBase64, ...rest } = state.loadedPaper;
+        // Cap text to ~200KB to stay safely inside the session-storage quota.
+        if (rest.text && rest.text.length > 200_000) rest.text = rest.text.slice(0, 200_000);
+        return rest;
+      })()
+    : null;
+  try {
+    await chrome.storage.session.set({
+      currentPaper: slim,
+      currentChat: state.chatHistory,
+    });
+  } catch (e) {
+    // If even the slim version is too big, drop the text too.
+    try {
+      const { text, ...minimal } = slim || {};
+      await chrome.storage.session.set({
+        currentPaper: minimal,
+        currentChat: state.chatHistory,
+      });
+    } catch (_) { /* swallow — UI state stays in memory */ }
+  }
 }
 
 async function autoDetectPaperOnCurrentTab() {
@@ -64,6 +87,14 @@ async function autoDetectPaperOnCurrentTab() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab?.url) return;
     const academic = /arxiv\.org|pubmed|biorxiv|medrxiv|nature\.com|science\.org|sciencedirect|ieee\.org|springer|acm\.org|semanticscholar/i;
+    const isPdfViewer = /\.pdf(\?|$)/i.test(tab.url) || tab.url.startsWith("file://") && /\.pdf$/i.test(tab.url);
+    if (isPdfViewer && !state.loadedPaper) {
+      const label = $("chatContextLabel");
+      if (label) {
+        label.textContent = "PDF tab detected. Use the URL field above to analyze it (Chrome blocks scripts inside its PDF viewer).";
+      }
+      return;
+    }
     if (academic.test(tab.url) && !state.loadedPaper) {
       const label = $("chatContextLabel");
       if (label && !state.loadedPaper) {
@@ -278,8 +309,8 @@ async function runAnalysis(paper) {
     state.loadedPaper = full;
     state.chatHistory = [];
     await savePinnedPaper();
-    await saveToLibrary(full);
-    bumpStats(parseFloat(took));
+    const wasNew = await saveToLibrary(full);
+    if (wasNew) bumpStats(parseFloat(took));
 
     stepLoading("Done", 100);
     setTimeout(() => {
@@ -450,7 +481,7 @@ async function saveToLibrary(paper) {
   const key = paper.url || paper.title;
   const existing = lib.findIndex((x) => (x.url || x.title) === key);
   const entry = {
-    id: Date.now().toString(36),
+    id: existing >= 0 ? lib[existing].id : Date.now().toString(36),
     title: paper.title,
     source: paper.source,
     url: paper.url,
@@ -462,8 +493,11 @@ async function saveToLibrary(paper) {
     processingTime: paper.processingTime,
     savedAt: Date.now(),
   };
-  if (existing >= 0) lib[existing] = entry; else lib.unshift(entry);
+  const isNew = existing < 0;
+  if (isNew) lib.unshift(entry);
+  else lib[existing] = entry;
   await chrome.storage.local.set({ library: lib.slice(0, 200) });
+  return isNew;
 }
 
 async function renderLibrary() {
@@ -512,6 +546,11 @@ async function loadFromLibrary(item) {
   renderResults(item);
   updateChatContext();
   switchTab("analyze");
+  // Hint that chat will work off the saved analysis only (no full text).
+  if (!item.text && !item.pdfBase64) {
+    const ctxLabel = $("chatContextLabel");
+    if (ctxLabel) ctxLabel.textContent = "Talking to: " + truncate(item.title, 50) + " (analysis-only)";
+  }
 }
 
 async function deleteFromLibrary(id) {
