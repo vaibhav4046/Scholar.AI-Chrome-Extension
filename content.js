@@ -8,8 +8,14 @@
 
   chrome.runtime.onMessage.addListener((req, sender, sendResponse) => {
     if (req.action === "extractPageContent") {
-      try { sendResponse(extract()); }
-      catch (e) { sendResponse({ text: "", title: document.title, error: e.message }); }
+      try {
+        const out = extract();
+        // Defensive: never send back >2MB through the message channel.
+        if (out.text && out.text.length > 1_500_000) out.text = out.text.slice(0, 1_500_000);
+        sendResponse(out);
+      } catch (e) {
+        sendResponse({ text: "", title: document.title, error: e.message });
+      }
       return true;
     }
     if (req.action === "triggerAnalyze") {
