@@ -7,6 +7,11 @@ const state = {
   loadedPaper: null,
   chatHistory: [],
   stats: { papers: 0, chats: 0, totalTime: 0 },
+  // Mutex for analysis: prevents rapid double-clicks from firing
+  // multiple parallel Gemini calls (token waste + UI race).
+  analyzing: false,
+  // AbortController for the current analysis flow so we can cancel.
+  analyzeAbort: null,
 };
 
 // ---------- Init ----------
@@ -164,6 +169,10 @@ function bindEvents() {
 
   // Library
   $("libraryClearBtn").addEventListener("click", clearLibrary);
+
+  // Cancel during analysis
+  const cancelBtn = $("cancelAnalyzeBtn");
+  if (cancelBtn) cancelBtn.addEventListener("click", cancelAnalysis);
 }
 
 function switchTab(name) {
@@ -190,8 +199,18 @@ async function openSidePanel() {
   }
 }
 
+// ---------- Analyze guard ----------
+function guardAnalyzing() {
+  if (state.analyzing) {
+    showToast("Analysis already running. Cancel it first.", "err");
+    return true;
+  }
+  return false;
+}
+
 // ---------- File upload ----------
 async function handleFile(file) {
+  if (guardAnalyzing()) return;
   if (file.size > 20 * 1024 * 1024) return showToast("File too big (20MB max).", "err");
   const ext = (file.name.split(".").pop() || "").toLowerCase();
   if (!["pdf", "txt", "doc", "docx"].includes(ext)) {
@@ -234,6 +253,7 @@ function fileToBase64(file) {
 
 // ---------- URL ----------
 async function handleUrl() {
+  if (guardAnalyzing()) return;
   const url = $("urlInput").value.trim();
   if (!url) return showToast("Paste a URL.", "err");
   if (!/^https?:\/\//.test(url)) return showToast("URL must start with http(s)://", "err");
@@ -259,6 +279,7 @@ async function handleUrl() {
 
 // ---------- Current page ----------
 async function handleCurrentPage() {
+  if (guardAnalyzing()) return;
   startLoading();
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -287,11 +308,15 @@ async function handleCurrentPage() {
 
 // ---------- Run analysis ----------
 async function runAnalysis(paper) {
+  state.analyzing = true;
+  state.analyzeAbort = { cancelled: false };
+  const myAbort = state.analyzeAbort;
   stepLoading("Sending to Gemini…", 40);
   const t0 = performance.now();
 
   try {
     const resp = await chrome.runtime.sendMessage({ action: "analyzePaper", paper });
+    if (myAbort.cancelled) return;
     if (resp?.error) throw new Error(resp.error);
 
     stepLoading("Finalizing…", 90);
@@ -318,11 +343,26 @@ async function runAnalysis(paper) {
       renderResults(full);
       updateChatContext();
       fetchRelated(full);
+      // Clear stale URL/file inputs so user knows the slate is fresh.
+      const u = $("urlInput"); if (u) u.value = "";
+      const fi = $("fileInput"); if (fi) fi.value = "";
     }, 250);
   } catch (e) {
+    if (myAbort.cancelled) return;
     stopLoading();
     showToast("Analysis failed: " + (e.message || e), "err");
+  } finally {
+    state.analyzing = false;
+    state.analyzeAbort = null;
   }
+}
+
+function cancelAnalysis() {
+  if (state.analyzeAbort) state.analyzeAbort.cancelled = true;
+  state.analyzing = false;
+  stopLoading();
+  showHome();
+  showToast("Analysis cancelled.", "ok", 1500);
 }
 
 async function fetchRelated(paper) {
@@ -672,7 +712,12 @@ function showToast(msg, variant, ms) {
   setTimeout(() => t.remove(), ms || 2800);
 }
 
-// Keyboard: Esc → home
+// Keyboard: Esc → home (or cancel analysis if running)
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !$("analyzeResults").classList.contains("hidden")) showHome();
+  if (e.key !== "Escape") return;
+  if (state.analyzing) {
+    cancelAnalysis();
+    return;
+  }
+  if (!$("analyzeResults").classList.contains("hidden")) showHome();
 });

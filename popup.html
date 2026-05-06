@@ -91,6 +91,7 @@
             <div class="spinner"></div>
             <div class="loading-text" id="loadingText">Preparing paper…</div>
             <div class="progress"><div class="progress-fill" id="progressFill"></div></div>
+            <button class="btn btn-ghost" id="cancelAnalyzeBtn" type="button" style="margin-top:8px;font-size:11px;">Cancel</button>
           </div>
         </div>
 
@@ -207,7 +208,7 @@
           <div class="chat-msgs" id="chatMsgs"></div>
 
           <div class="chat-input-row">
-            <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ask anything about this paper…" disabled></textarea>
+            <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ask… (Enter = send · Shift+Enter = newline)" disabled></textarea>
             <button class="send-btn" id="chatSendBtn" disabled aria-label="Send">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             </button>

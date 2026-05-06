@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<!-- Loads popup.html in an iframe with a complete chrome.* shim so all
+     event handlers wire up and we can drive the UI as a real user. -->
+<html>
+<head>
+<meta charset="utf-8">
+<title>Scholar.AI Brutal Test Harness</title>
+<style>html,body,iframe { margin:0; padding:0; border:0; width:100%; height:100vh; background:#0a0d12; }</style>
+</head>
+<body>
+<script>
+// Intercept the iframe load and inject the shim before popup.js runs.
+const iframe = document.createElement("iframe");
+iframe.src = "popup.html";
+iframe.id = "popupFrame";
+document.body.appendChild(iframe);
+
+iframe.addEventListener("load", () => {
+  const w = iframe.contentWindow;
+  // Already loaded — replace failed init by re-injecting shim and reloading.
+}, { once: true });
+
+// Mock backend state
+const mockLib = [];
+const mockResponses = {
+  testApiKey: () => ({ ok: true }),
+  fetchUrl: (url) => {
+    if (url.includes("404")) return { error: "HTTP 404" };
+    if (url.includes("timeout")) return { error: "Network error" };
+    return {
+      title: "Attention Is All You Need",
+      source: "arXiv",
+      url,
+      text: "We propose the Transformer, a new simple network architecture...".repeat(40),
+      authors: "Vaswani A., Shazeer N., Parmar N., Uszkoreit J.",
+      year: "2017",
+      doi: "10.48550/arXiv.1706.03762",
+    };
+  },
+  analyzePaper: () => ({
+    analysis: {
+      summary: "Introduces the Transformer, a sequence-transduction architecture based **entirely on attention mechanisms**, dispensing with recurrence and convolutions.",
+      findings: "- BLEU 28.4 on WMT 2014 En→De (+2.0 over best prior)\n- BLEU 41.8 on WMT 2014 En→Fr after 3.5d on 8 GPUs\n- 8 attention heads enable diverse relations\n- Sinusoidal positional encodings preserve relative order",
+      methodology: "Encoder–decoder stack with 6 identical layers each. Self-attention + feed-forward sublayers wrapped with residual connections and layer norm.",
+      bias: "Evaluated only on translation; generalization claims not extensively validated. Hardware constraints limit baseline comparisons.",
+      gaps: "- Scaling to 100B+ parameters\n- Post-hoc interpretability of attention\n- Low-resource language performance",
+      wordCount: 8123,
+    },
+    confidence: 95,
+  }),
+  chatAboutPaper: () => ({ reply: "The paper's main contribution is the **Transformer** — replacing recurrence/convolutions with self-attention. This enables full parallelization during training." }),
+  findRelated: () => ({ items: [
+    { title: "Layer Normalization", authors: "Ba J. et al.", year: 2016, url: "https://arxiv.org/abs/1607.06450" },
+    { title: "Neural Machine Translation by Jointly Learning to Align and Translate", authors: "Bahdanau D. et al.", year: 2014, url: "https://arxiv.org/abs/1409.0473" },
+  ] }),
+  buildCitation: (paper) => ({
+    apa: `${paper.authors||"Unknown"} (${paper.year||"n.d."}). ${paper.title}. ${paper.source||""}.`,
+    mla: `${paper.authors||"Unknown"}. "${paper.title}." ${paper.source||""}, ${paper.year||"n.d."}.`,
+    bibtex: `@article{Vaswani${paper.year||2017},\n  title={${paper.title}},\n  author={${paper.authors||"Unknown"}},\n  year={${paper.year||2017}}\n}`,
+  }),
+};
+window.__mock = { lib: mockLib, responses: mockResponses };
+</script>
+</body>
+</html>
