@@ -11,6 +11,18 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 [![No tracking](https://img.shields.io/badge/No%20tracking-100%25%20local-34d399?style=flat-square)](#privacy)
 
+<br/>
+
+<table>
+<tr>
+<td align="center" width="20%"><img src="docs/screenshots/01-home.png" alt="Analyze home" /><br/><sub><b>Analyze</b><br/>Drop a PDF or paste a URL</sub></td>
+<td align="center" width="20%"><img src="docs/screenshots/02-results.png" alt="Analysis results" /><br/><sub><b>Results</b><br/>Summary · findings · gaps</sub></td>
+<td align="center" width="20%"><img src="docs/screenshots/03-chat.png" alt="Chat with paper" /><br/><sub><b>Chat</b><br/>Multi-turn Q&A</sub></td>
+<td align="center" width="20%"><img src="docs/screenshots/04-library.png" alt="Library" /><br/><sub><b>Library</b><br/>Reopen any analysis</sub></td>
+<td align="center" width="20%"><img src="docs/screenshots/05-options.png" alt="Settings" /><br/><sub><b>Settings</b><br/>Bring-your-own key</sub></td>
+</tr>
+</table>
+
 </div>
 
 ---
