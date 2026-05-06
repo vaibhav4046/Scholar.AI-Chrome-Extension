@@ -67,7 +67,7 @@ git clone https://github.com/vaibhav4046/Scholar.AI-Chrome-Extension.git
 3. Click **Load unpacked** → select the cloned folder
 4. Pin **ScholarAI** to your toolbar
 5. Grab a free Gemini key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
-6. Click the extension icon → ⚙ → paste key → **Test key**
+6. Click the extension icon, open Settings, paste key, **Test key**
 7. You're done
 
 ### Chrome Web Store
