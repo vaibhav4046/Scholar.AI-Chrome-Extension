@@ -519,8 +519,19 @@ function buildCitations(paper) {
   if (doiUrl) mlaParts.push(`${doiUrl}.`);
   const mla = mlaParts.join(" ");
 
-  const firstAuthor =
-    (authors.split(",")[0] || "Author").split(" ").slice(-1)[0].replace(/\W/g, "") || "ref";
+  // Pick the family name for the BibTeX key. Handle three common formats:
+  //   "Vaswani A."     -> first token is the family name
+  //   "A. Vaswani"     -> last token is the family name
+  //   "Vaswani, A."    -> the comma-prefix is the family name
+  const firstAuthorRaw = (authors.split(",")[0] || "Author").trim();
+  const tokens = firstAuthorRaw.split(/\s+/).filter(Boolean);
+  const looksLikeInitial = (t) => /^[A-Z]\.?$/.test(t);
+  const family = tokens.length === 0
+    ? "ref"
+    : looksLikeInitial(tokens[0])
+      ? tokens[tokens.length - 1]
+      : tokens[0];
+  const firstAuthor = family.replace(/\W/g, "") || "ref";
   const bibtex = `@article{${firstAuthor}${bibtexYear},
   title={${title}},
   author={${authors}},
